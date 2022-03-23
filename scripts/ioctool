@@ -52,15 +52,9 @@ function ioccfg {
 }
 
 function camname_to_pv {
-   #A function that will loop through camviewer.cfg files throughout all hutches to find the name then use that to search for its PV 
-   campv=""
-   hutch=$(get_info --gethutch)
-   VIEWERCFG=/reg/g/pcds/pyps/config/$hutch/camviewer.cfg
-   CAMNAME=$(echo "$1" | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g')
-
+   # A function that will loop through camviewer.cfg files throughout all hutches to find the name then use that to search for its PV
    # The story here: 
-   # See how many matches we have in the hutch.
-   # If 0, try looking in all of the hutches.
+   # See how many matches we have.
    # If 1, then we're done.
    # Otherwise:
    # Look for a complete match, anchored on both sides.
@@ -68,18 +62,17 @@ function camname_to_pv {
    # If there is more than one, return "ambiguous"
    #
    # Make a temp file with just the PVs and camera names that match.
+
+   campv=""
    tmp=/tmp/cv.$$
-   cat "$VIEWERCFG" | grep -i "$CAMNAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
+   CAMNAME=$(echo "$1" | sed -e 's/-/ /g' -e 's/_/ /g' -e 's/ /[-_ ]/g')
+   VIEWERCFG=/reg/g/pcds/pyps/config/*/camviewer.cfg
+   cat $VIEWERCFG | grep -i "$CAMNAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
    c=$(wc -l <$tmp)
-   if [ "$c" -eq 0 ]; then 
-      VIEWERCFG=/reg/g/pcds/pyps/config/*/camviewer.cfg
-      cat $VIEWERCFG | grep -i "$CAMNAME" | grep -v '#' | awk -F, '{ if (split($2,a,";")==1) n=$2; else n=a[2]; gsub(" ","",n); gsub(" ","",$4); printf "%s %s\n", n, $4; }' >$tmp
-      c=$(wc -l <$tmp)
-      if [ "$c" -eq 0 ]; then
-         echo "No match for $1"
-         rm -f $tmp
-         exit
-      fi    
+   if [ "$c" -eq 0 ]; then
+      echo "No match for $1"
+      rm -f $tmp
+      exit
    fi
    if [ "$c" -eq 1 ]; then
       campv=$(awk '{print $1;}' <$tmp)
