@@ -93,6 +93,7 @@ function camname_to_pv {
       return
    fi
    echo '"'"$1"'" is ambiguous:'
+   awk '{print $2;}' <$tmp
    rm -f $tmp
    exit
 }
